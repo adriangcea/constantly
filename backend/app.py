@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, request
 from db.conexion import get_connection
+import bcrypt 
 
 app = Flask(__name__)
 
@@ -23,6 +24,9 @@ def crear_usuario():
     email = data["email"]
     contraseña = data["contraseña"]
 
+    password_bytes = contraseña.encode('utf-8')
+    hashed_password = bcrypt.hashpw(password_bytes, bcrypt.gensalt())
+
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -31,7 +35,7 @@ def crear_usuario():
     VALUES (%s, %s, %s, NOW(), 'user', 'activo')
     """
 
-    cursor.execute(query, (nombre, email, contraseña))
+    cursor.execute(query, (nombre, email, hashed_password))
     conn.commit()
 
     conn.close()
