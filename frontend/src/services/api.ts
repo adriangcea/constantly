@@ -20,3 +20,11 @@ export const createUsuario = async (usuario: {
 
   return res.json();
 };
+
+export const deleteUsuario = async (id: number) => {
+  const res = await fetch(`http://127.0.0.1:5000/usuarios/${id}`, {
+    method: "DELETE",
+  });
+
+  return res.json();
+};

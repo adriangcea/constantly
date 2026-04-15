@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getUsuarios, createUsuario } from "../services/api";
+import { getUsuarios, createUsuario, deleteUsuario } from "../services/api";
 
 const Users = () => {
   const [usuarios, setUsuarios] = useState<any[]>([]);
@@ -27,6 +27,11 @@ const Users = () => {
       [e.target.name]: e.target.value,
     });
   };
+
+  const handleDelete = async (id: number) => {
+  await deleteUsuario(id);
+  loadUsers();
+};
 
   //enviar formulario (POST)
   const handleSubmit = async (e: React.FormEvent) => {
@@ -78,10 +83,14 @@ const Users = () => {
 
       {/*LISTA DE USUARIOS*/}
       <ul>
-        {usuarios.map((u) => (
-          <li key={u.id_usuario}>
-            {u.nombre} - {u.email}
-          </li>
+      {usuarios.map((u) => (
+       <li key={u.id_usuario}>
+       {u.nombre} - {u.email}
+
+        <button onClick={() => handleDelete(u.id_usuario)}>
+        Eliminar
+        </button>
+         </li>
         ))}
       </ul>
     </div>
