@@ -4,6 +4,23 @@ import bcrypt
 
 usuarios_bp = Blueprint("usuarios", __name__)
 
+@usuarios_bp.route("/usuarios", methods=["GET"])
+def obtener_usuarios():
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT id_usuario, nombre, email, fecha_registro, rol, estado
+        FROM Usuario    
+    """)
+    usuarios = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return jsonify(usuarios)
+
+
 @usuarios_bp.route("/usuarios/<int:id>", methods=["GET"])
 def obtener_usuario(id):
     conn = get_connection()
