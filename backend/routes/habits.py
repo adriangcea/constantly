@@ -40,3 +40,25 @@ def create_habit():
     conn.close()
 
     return jsonify({"mensaje": "Hábito creado exitosamente"}), 201
+
+@habits_bp.route("/habits", methods=["GET"])
+@jwt_required()
+def get_habits():
+    user_id = get_jwt_identity()
+
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    query = """
+        SELECT id_habito, nombre, descripcion, frecuencia, fecha_creacion, activo
+        FROM Habito
+        WHERE id_usuario = %s
+    """
+
+    cursor.execute(query, (user_id,))
+    habits = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return jsonify(habits)
