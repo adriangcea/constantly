@@ -108,3 +108,51 @@ def get_all_progress():
     conn.close()
 
     return jsonify(data)
+
+@progress_bp.route("/habits/<int:habit_id>/streak", methods=["GET"])
+@jwt_required()
+def get_streak(habit_id):
+    user_id = get_jwt_identity()
+
+    conn = get_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    #Verificar que el hábito es del usuario
+    cursor.execute("""
+        SELECT id_habito FROM Habito
+        WHERE id_habito = %s AND id_usuario = %s
+    """, (habit_id, user_id))
+
+    habit = cursor.fetchone()
+
+    if not habit:
+        return jsonify({"message": "Hábito no encontrado o no autorizado"}), 404
+
+    #Obtener fechas ordenadas DESC
+    cursor.execute("""
+        SELECT fecha
+        FROM RegistroProgreso
+        WHERE id_habito = %s AND completado = TRUE
+        ORDER BY fecha DESC
+    """, (habit_id,))
+
+    fechas = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    #Calcular streak
+    from datetime import date, timedelta
+
+    streak = 0
+    today = date.today()
+
+    for i, row in enumerate(fechas):
+        expected_date = today - timedelta(days=i)
+
+        if row["fecha"] == expected_date:
+            streak += 1
+        else:
+            break
+
+    return jsonify({"streak": streak})
