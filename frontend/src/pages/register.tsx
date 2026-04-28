@@ -2,15 +2,20 @@ import { useState } from "react";
 import { register } from "../services/auth";
 
 export default function Register() {
-  const [name, setName] = useState("");
+  const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleRegister = async (e: any) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!nombre || !email || !password) {
+      alert("Todos los campos son obligatorios");
+      return;
+    }
+
     try {
-      await register(name, email, password);
+      await register(nombre, email, password);
       alert("Usuario creado correctamente");
     } catch (err) {
       alert("Error al registrarse");
@@ -24,18 +29,21 @@ export default function Register() {
       <input
         type="text"
         placeholder="Nombre"
-        onChange={(e) => setName(e.target.value)}
+        value={nombre}
+        onChange={(e) => setNombre(e.target.value)}
       />
 
       <input
         type="email"
         placeholder="Email"
+        value={email}
         onChange={(e) => setEmail(e.target.value)}
       />
 
       <input
         type="password"
         placeholder="Password"
+        value={password}
         onChange={(e) => setPassword(e.target.value)}
       />
 

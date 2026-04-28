@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 import { getHabits, createHabit } from "../services/habits";
 
 interface Habit {
@@ -9,16 +11,23 @@ interface Habit {
 }
 
 export default function Dashboard() {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
   const [habits, setHabits] = useState<Habit[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   const [creating, setCreating] = useState(false);
 
   // Formulario
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [frecuencia, setFrecuencia] = useState("diaria");
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   // Función reutilizable
   const fetchHabits = async () => {
@@ -27,8 +36,7 @@ export default function Dashboard() {
       const data = await getHabits();
       setHabits(data);
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : String(err);
+      const errorMessage = err instanceof Error ? err.message : String(err);
       setError(`No se pudieron cargar los hábitos: ${errorMessage}`);
     } finally {
       setLoading(false);
@@ -48,26 +56,27 @@ export default function Dashboard() {
       return;
     }
 
-     setCreating(true); 
+    setCreating(true);
 
     try {
-      await createHabit({
-        nombre,
-        descripcion,
-        frecuencia,
-      });
+      await createHabit({ nombre, descripcion, frecuencia });
 
-      // limpiar formulario
+      // Limpiar formulario
       setNombre("");
       setDescripcion("");
       setFrecuencia("diaria");
 
-      //refrescar lista
+      // Refrescar lista
       fetchHabits();
     } catch (err) {
-      alert("Error al crear hábito");
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "No se pudo determinar la causa del error.";
+      alert(`Error al crear hábito: ${errorMessage}`);
     } finally {
-    setCreating(false);
+      setCreating(false);
+    }
   };
 
   if (loading) return <p>Cargando hábitos...</p>;
@@ -75,7 +84,11 @@ export default function Dashboard() {
 
   return (
     <div>
-      <h1>Dashboard</h1>
+      {/* CABECERA CON LOGOUT */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h1>Dashboard</h1>
+        <button onClick={handleLogout}>Cerrar sesión</button>
+      </div>
 
       {/* FORMULARIO */}
       <h2>Crear nuevo hábito</h2>
@@ -104,7 +117,7 @@ export default function Dashboard() {
         </select>
 
         <button type="submit" disabled={creating}>
-        {creating ? "Creando..." : "Crear hábito"}
+          {creating ? "Creando..." : "Crear hábito"}
         </button>
       </form>
 

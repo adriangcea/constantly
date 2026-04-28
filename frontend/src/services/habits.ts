@@ -9,9 +9,10 @@ export const getHabits = async () => {
     },
   });
 
-  if (!res.ok) {
-    throw new Error("Error al obtener hábitos");
-  }
+    if (!res.ok) {
+     const body = await res.json().catch(() => ({}));
+     throw new Error(`[${res.status}] ${body.mensaje || "Error al obtener hábitos"}`);
+    }
 
   return res.json();
 };
@@ -33,7 +34,8 @@ export const createHabit = async (habit: {
   });
 
   if (!res.ok) {
-    throw new Error("Error al crear hábito");
+    const body = await res.json().catch(() => ({}));
+    throw new Error(`[${res.status}] ${body.mensaje || "Error al crear hábito"}`);
   }
 
   return res.json();
