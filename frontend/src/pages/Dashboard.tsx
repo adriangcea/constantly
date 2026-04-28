@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getHabits } from "../services/habits";
+import { getHabits, createHabit } from "../services/habits";
 
 interface Habit {
   id_habito: number;
@@ -13,22 +13,62 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchHabits = async () => {
-      try {
-        const data = await getHabits();
-        setHabits(data);
-      } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : String(err);
-        setError(`No se pudieron cargar los hábitos: ${errorMessage}`);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const [creating, setCreating] = useState(false);
 
+  // Formulario
+  const [nombre, setNombre] = useState("");
+  const [descripcion, setDescripcion] = useState("");
+  const [frecuencia, setFrecuencia] = useState("diaria");
+
+  // Función reutilizable
+  const fetchHabits = async () => {
+    try {
+      setLoading(true);
+      const data = await getHabits();
+      setHabits(data);
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : String(err);
+      setError(`No se pudieron cargar los hábitos: ${errorMessage}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchHabits();
   }, []);
+
+  // Crear hábito
+  const handleCreateHabit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!nombre) {
+      alert("El nombre es obligatorio");
+      return;
+    }
+
+     setCreating(true); 
+
+    try {
+      await createHabit({
+        nombre,
+        descripcion,
+        frecuencia,
+      });
+
+      // limpiar formulario
+      setNombre("");
+      setDescripcion("");
+      setFrecuencia("diaria");
+
+      //refrescar lista
+      fetchHabits();
+    } catch (err) {
+      alert("Error al crear hábito");
+    } finally {
+    setCreating(false);
+  };
 
   if (loading) return <p>Cargando hábitos...</p>;
   if (error) return <p>{error}</p>;
@@ -36,6 +76,40 @@ export default function Dashboard() {
   return (
     <div>
       <h1>Dashboard</h1>
+
+      {/* FORMULARIO */}
+      <h2>Crear nuevo hábito</h2>
+      <form onSubmit={handleCreateHabit}>
+        <input
+          type="text"
+          placeholder="Nombre"
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+        />
+
+        <input
+          type="text"
+          placeholder="Descripción"
+          value={descripcion}
+          onChange={(e) => setDescripcion(e.target.value)}
+        />
+
+        <select
+          value={frecuencia}
+          onChange={(e) => setFrecuencia(e.target.value)}
+        >
+          <option value="diaria">Diaria</option>
+          <option value="semanal">Semanal</option>
+          <option value="mensual">Mensual</option>
+        </select>
+
+        <button type="submit" disabled={creating}>
+        {creating ? "Creando..." : "Crear hábito"}
+        </button>
+      </form>
+
+      {/* LISTA */}
+      <h2>Tus hábitos</h2>
 
       {habits.length === 0 ? (
         <p>No tienes hábitos aún</p>
