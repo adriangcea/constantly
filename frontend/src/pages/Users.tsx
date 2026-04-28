@@ -1,100 +1,166 @@
 import { useEffect, useState } from "react";
-import { getUsuarios, createUsuario, deleteUsuario } from "../services/api";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { getMyProfile, updateMyProfile, deleteMyAccount } from "../services/api";
 
-const Users = () => {
-  const [usuarios, setUsuarios] = useState<any[]>([]);
+interface UserProfile {
+  id_usuario: number;
+  nombre: string;
+  email: string;
+  fecha_registro: string;
+  rol: string;
+  estado: string;
+}
 
-  // formulario
-  const [form, setForm] = useState({
-    nombre: "",
-    email: "",
-    contraseña: "",
-  });
+export default function Users() {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
 
-  // cargar usuarios
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Campos editables
+  const [nombre, setNombre] = useState("");
+  const [email, setEmail] = useState("");
+  const [contraseña, setContraseña] = useState("");
+
   useEffect(() => {
-    loadUsers();
+    const fetchProfile = async () => {
+      try {
+        const data = await getMyProfile();
+        setProfile(data);
+        setNombre(data.nombre);
+        setEmail(data.email);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        setError(`No se pudo cargar el perfil: ${msg}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
   }, []);
 
-  const loadUsers = () => {
-    getUsuarios().then((data) => setUsuarios(data));
-  };
-
-  // actualizar inputs
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const handleDelete = async (id: number) => {
-  await deleteUsuario(id);
-  loadUsers();
-};
-
-  //enviar formulario (POST)
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!profile) return;
 
-    await createUsuario(form);
+    setSaving(true);
+    setSuccessMsg(null);
+    setError(null);
 
-    setForm({
-      nombre: "",
-      email: "",
-      contraseña: "",
-    });
+    try {
+      const payload: { nombre?: string; email?: string; contraseña?: string } = {};
+      if (nombre !== profile.nombre) payload.nombre = nombre;
+      if (email !== profile.email) payload.email = email;
+      if (contraseña) payload.contraseña = contraseña;
 
-    loadUsers(); // refrescar lista
+      if (Object.keys(payload).length === 0) {
+        setError("No has modificado ningún campo.");
+        return;
+      }
+
+      await updateMyProfile(profile.id_usuario, payload);
+      setSuccessMsg("Perfil actualizado correctamente.");
+      setContraseña("");
+
+      // Actualizar datos locales
+      setProfile({ ...profile, nombre, email });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(`Error al actualizar: ${msg}`);
+    } finally {
+      setSaving(false);
+    }
   };
+
+  const handleDelete = async () => {
+    if (!profile) return;
+    const confirmed = window.confirm(
+      "¿Seguro que quieres eliminar tu cuenta? Esta acción no se puede deshacer."
+    );
+    if (!confirmed) return;
+
+    try {
+      await deleteMyAccount(profile.id_usuario);
+      logout();
+      navigate("/login");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(`Error al eliminar cuenta: ${msg}`);
+    }
+  };
+
+  if (loading) return <p>Cargando perfil...</p>;
+  if (error && !profile) return <p>{error}</p>;
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>Usuarios</h2>
+    <div>
+      {/* CABECERA */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h1>Mi perfil</h1>
+        <button onClick={() => navigate("/dashboard")}>← Volver al Dashboard</button>
+      </div>
 
-      {/*FORMULARIO CREAR USUARIO*/}
-      <form onSubmit={handleSubmit}>
-        <input
-          name="nombre"
-          placeholder="Nombre"
-          value={form.nombre}
-          onChange={handleChange}
-        />
+      {/* MENSAJES */}
+      {error && <p style={{ color: "red" }}>{error}</p>}
+      {successMsg && <p style={{ color: "green" }}>{successMsg}</p>}
 
-        <input
-          name="email"
-          placeholder="Email"
-          value={form.email}
-          onChange={handleChange}
-        />
+      {/* INFO DE SOLO LECTURA */}
+      {profile && (
+        <div>
+          <p><strong>Miembro desde:</strong> {new Date(profile.fecha_registro).toLocaleDateString("es-ES")}</p>
+          <p><strong>Rol:</strong> {profile.rol}</p>
+          <p><strong>Estado:</strong> {profile.estado}</p>
+        </div>
+      )}
 
-        <input
-          name="contraseña"
-          type="password"
-          placeholder="Contraseña"
-          value={form.contraseña}
-          onChange={handleChange}
-        />
+      {/* FORMULARIO DE EDICIÓN */}
+      <h2>Editar datos</h2>
+      <form onSubmit={handleUpdate}>
+        <div>
+          <label>Nombre</label>
+          <input
+            type="text"
+            value={nombre}
+            onChange={(e) => setNombre(e.target.value)}
+          />
+        </div>
 
-        <button type="submit">Crear usuario</button>
+        <div>
+          <label>Email</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
+
+        <div>
+          <label>Nueva contraseña <small>(dejar vacío para no cambiarla)</small></label>
+          <input
+            type="password"
+            value={contraseña}
+            onChange={(e) => setContraseña(e.target.value)}
+            placeholder="Nueva contraseña"
+          />
+        </div>
+
+        <button type="submit" disabled={saving}>
+          {saving ? "Guardando..." : "Guardar cambios"}
+        </button>
       </form>
 
+      {/* ZONA DE PELIGRO */}
       <hr />
-
-      {/*LISTA DE USUARIOS*/}
-      <ul>
-      {usuarios.map((u) => (
-       <li key={u.id_usuario}>
-       {u.nombre} - {u.email}
-
-        <button onClick={() => handleDelete(u.id_usuario)}>
-        Eliminar
-        </button>
-         </li>
-        ))}
-      </ul>
+      <h2>Zona de peligro</h2>
+      <button onClick={handleDelete} style={{ color: "red" }}>
+        Eliminar mi cuenta
+      </button>
     </div>
   );
-};
-
-export default Users;
+}

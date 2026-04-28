@@ -1,30 +1,48 @@
-const API_URL = "http://127.0.0.1:5000";
+const API_URL = "http://localhost:5000";
 
-export const getUsuarios = async () => {
-  const response = await fetch(`${API_URL}/usuarios`);
-  return response.json();
+const getToken = () => localStorage.getItem("token");
+
+// ─── PERFIL DEL USUARIO AUTENTICADO ───────────────────────────────────────
+
+export const getMyProfile = async () => {
+  const res = await fetch(`${API_URL}/users/me`, {
+    headers: {
+      Authorization: `Bearer ${getToken()}`,
+    },
+  });
+
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.error || `[${res.status}] Error al obtener perfil`);
+  return body;
 };
 
-export const createUsuario = async (usuario: {
-  nombre: string;
-  email: string;
-  contraseña: string;
-}) => {
-  const res = await fetch(`${API_URL}/usuarios`, {
-    method: "POST",
+export const updateMyProfile = async (
+  id: number,
+  data: { nombre?: string; email?: string; contraseña?: string }
+) => {
+  const res = await fetch(`${API_URL}/users/${id}`, {
+    method: "PUT",
     headers: {
       "Content-Type": "application/json",
+      Authorization: `Bearer ${getToken()}`,
     },
-    body: JSON.stringify(usuario),
+    body: JSON.stringify(data),
   });
 
-  return res.json();
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.error || `[${res.status}] Error al actualizar perfil`);
+  return body;
 };
 
-export const deleteUsuario = async (id: number) => {
-  const res = await fetch(`http://127.0.0.1:5000/usuarios/${id}`, {
+export const deleteMyAccount = async (id: number) => {
+  const res = await fetch(`${API_URL}/users/${id}`, {
     method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${getToken()}`,
+    },
   });
 
-  return res.json();
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.error || `[${res.status}] Error al eliminar cuenta`);
+  return body;
 };

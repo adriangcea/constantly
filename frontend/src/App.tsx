@@ -6,6 +6,7 @@ import Register from "./pages/register";
 import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoute";
+import Users from "./pages/Users";
 
 function App() {
   return (
@@ -42,6 +43,15 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Users />
+              </ProtectedRoute>
+            }
+/>
 
           {/* Ruta fallback */}
           <Route path="*" element={<h1>404 - Página no encontrada</h1>} />
