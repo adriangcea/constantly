@@ -80,10 +80,10 @@ def get_user_by_id(id):
 def create_user():
     data = request.json
 
-    if not data or not all(k in data for k in ("name", "email", "password")):
+    if not data or not all(k in data for k in ("nombre", "email", "password")):
         return jsonify({"error": "Faltan datos"}), 400
 
-    nombre = data["name"]
+    nombre = data["nombre"]
     email = data["email"]
     contraseña = data["password"]
 

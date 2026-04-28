@@ -11,12 +11,12 @@ def create_habit():
     data = request.get_json()
 
     # Validación
-    if not data or not all(k in data for k in ("name", "frequency")):
+    if not data or not all(k in data for k in ("nombre", "frecuencia")):
         return jsonify({"mensaje": "Datos incompletos"}), 400
 
-    name = data["name"]
-    description = data.get("description", "")
-    frequency = data["frequency"]
+    name = data["nombre"]
+    description = data.get("descripcion", "")
+    frequency = data["frecuencia"]
 
     # Validar ENUM
     if frequency not in ["diaria", "semanal", "mensual"]:
@@ -60,5 +60,9 @@ def get_habits():
 
     cursor.close()
     conn.close()
+
+    for habit in habits:
+        if habit.get("fecha_creacion"):
+            habit["fecha_creacion"] = habit["fecha_creacion"].isoformat()
 
     return jsonify(habits)
