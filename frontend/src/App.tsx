@@ -1,15 +1,18 @@
 import Login from "./pages/login";    
 import Register from "./pages/register";
+import { AuthProvider } from "./context/AuthContext"; 
 
 function App() {
   return (
-    <div>
-      <h1>Habit Tracker</h1>
+    <AuthProvider>
+      <div>
+        <h1>Habit Tracker</h1>
 
-      <Login />
-      <hr />
-      <Register />
-    </div>
+        <Login />
+        <hr />
+        <Register />
+      </div>
+    </AuthProvider>
   );
 }
 
