@@ -1,11 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-<<<<<<< HEAD
-import { getHabits, createHabit } from "../services/habits";
-=======
 import { getHabits, createHabit, markHabitDone, getStreak } from "../services/habits";
->>>>>>> feature/frontend
 
 interface Habit {
   id_habito: number;
@@ -36,10 +32,6 @@ export default function Dashboard() {
     navigate("/login");
   };
 
-<<<<<<< HEAD
-  // Función reutilizable
-=======
->>>>>>> feature/frontend
   const fetchHabits = async () => {
     try {
       setLoading(true);
@@ -82,21 +74,6 @@ export default function Dashboard() {
 
     try {
       await createHabit({ nombre, descripcion, frecuencia });
-<<<<<<< HEAD
-
-      // Limpiar formulario
-      setNombre("");
-      setDescripcion("");
-      setFrecuencia("diaria");
-
-      // Refrescar lista
-      fetchHabits();
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : "No se pudo determinar la causa del error.";
-=======
       setNombre("");
       setDescripcion("");
       setFrecuencia("diaria");
@@ -104,13 +81,10 @@ export default function Dashboard() {
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "No se pudo determinar la causa del error.";
->>>>>>> feature/frontend
       alert(`Error al crear hábito: ${errorMessage}`);
     } finally {
       setCreating(false);
     }
-<<<<<<< HEAD
-=======
   };
 
   const handleMarkDone = async (habitId: number) => {
@@ -130,7 +104,6 @@ export default function Dashboard() {
     } finally {
       setMarkingId(null);
     }
->>>>>>> feature/frontend
   };
 
   if (loading) return <p>Cargando hábitos...</p>;
@@ -138,13 +111,10 @@ export default function Dashboard() {
 
   return (
     <div>
-<<<<<<< HEAD
-      {/* CABECERA CON LOGOUT */}
-=======
       {/* CABECERA */}
->>>>>>> feature/frontend
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h1>Dashboard</h1>
+        <button onClick={() => navigate("/profile")}>Mi perfil</button>
         <button onClick={handleLogout}>Cerrar sesión</button>
       </div>
 
