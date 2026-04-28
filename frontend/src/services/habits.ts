@@ -38,3 +38,40 @@ export const createHabit = async (habit: {
 
   return res.json();
 };
+
+export const markHabitDone = async (habitId: number) => {
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(`${API_URL}/progress`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ habit_id: habitId }),
+  });
+
+  const body = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    throw new Error(body.message || `[${res.status}] Error al marcar hábito`);
+  }
+
+  return body;
+};
+
+export const getStreak = async (habitId: number) => {
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(`${API_URL}/habits/${habitId}/streak`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error(`[${res.status}] Error al obtener racha`);
+  }
+
+  return res.json(); // devuelve { streak: number }
+};
