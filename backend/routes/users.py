@@ -3,9 +3,9 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from db.connection import get_connection
 import bcrypt
 
-usuarios_bp = Blueprint("users", __name__)
+users_bp = Blueprint("users", __name__)
 
-@usuarios_bp.route('/users/me', methods=['GET'])
+@users_bp.route('/users/me', methods=['GET'])
 @jwt_required()
 def get_my_user():
     user_id = get_jwt_identity()
@@ -28,7 +28,7 @@ def get_my_user():
 
     return jsonify(user)
 
-@usuarios_bp.route("/users", methods=["GET"])
+@users_bp.route("/users", methods=["GET"])
 @jwt_required()
 def get_users():
     conn = get_connection()
@@ -46,7 +46,7 @@ def get_users():
     return jsonify(usuarios)
 
 
-@usuarios_bp.route("/users/<int:id>", methods=["GET"])
+@users_bp.route("/users/<int:id>", methods=["GET"])
 @jwt_required()
 def get_user_by_id(id):
     user_id = get_jwt_identity()
@@ -76,7 +76,7 @@ def get_user_by_id(id):
     return jsonify(usuario)
 
 
-@usuarios_bp.route("/users", methods=["POST"])
+@users_bp.route("/users", methods=["POST"])
 def create_user():
     data = request.json
 
@@ -110,7 +110,7 @@ def create_user():
     return jsonify({"mensaje": "Usuario creado correctamente"})
 
 
-@usuarios_bp.route("/users/<int:id>", methods=["PUT"])
+@users_bp.route("/users/<int:id>", methods=["PUT"])
 @jwt_required()
 def update_user(id):
     user_id = get_jwt_identity()
@@ -181,7 +181,7 @@ def update_user(id):
     return jsonify({"mensaje": "Usuario actualizado correctamente"})
 
 
-@usuarios_bp.route("/users/<int:id>", methods=["DELETE"])
+@users_bp.route("/users/<int:id>", methods=["DELETE"])
 @jwt_required()
 def delete_user(id):
     user_id = get_jwt_identity()
