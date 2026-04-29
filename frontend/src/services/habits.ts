@@ -61,7 +61,7 @@ export const updateHabit = async (
   return body;
 };
 
-export const deleteHabit = async (habitId: number) => {
+ export const deleteHabit = async (habitId: number) => {
   const token = localStorage.getItem("token");
 
   const res = await fetch(`${API_URL}/habits/${habitId}`, {
