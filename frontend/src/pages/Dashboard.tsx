@@ -1,16 +1,28 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { 
-  getHabits, createHabit, markHabitDone, getStreak, getTodayProgress } from "../services/habits";
+import {
+  getHabits,
+  createHabit,
+  markHabitDone,
+  getStreak,
+  getTodayProgress,
+  updateHabit,
+  deleteHabit,
+} from "../services/habits";
 
 interface Habit {
   id_habito: number;
   nombre: string;
   descripcion: string;
   frecuencia: string;
-  streak?: number;        // racha actual
-  doneToday?: boolean;    // si ya se marcó hoy
+  streak?: number;
+}
+
+interface EditForm {
+  nombre: string;
+  descripcion: string;
+  frecuencia: string;
 }
 
 export default function Dashboard() {
@@ -22,9 +34,14 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
-  const [markingId, setMarkingId] = useState<number | null>(null); // hábito que se está marcando
+  const [markingId, setMarkingId] = useState<number | null>(null);
 
-  // Formulario
+  // Edición inline
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState<EditForm>({ nombre: "", descripcion: "", frecuencia: "diaria" });
+  const [saving, setSaving] = useState(false);
+
+  // Formulario crear
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [frecuencia, setFrecuencia] = useState("diaria");
@@ -37,14 +54,12 @@ export default function Dashboard() {
   const fetchHabits = async () => {
     try {
       setLoading(true);
-      
-      // Cargamos hábitos y progreso de hoy en paralelo
+
       const [data, todayIds] = await Promise.all([
         getHabits(),
         getTodayProgress(),
       ]);
 
-      // Para cada hábito, obtener su racha
       const habitsWithStreak = await Promise.all(
         data.map(async (habit: Habit) => {
           try {
@@ -76,9 +91,7 @@ export default function Dashboard() {
       alert("El nombre es obligatorio");
       return;
     }
-
     setCreating(true);
-
     try {
       await createHabit({ nombre, descripcion, frecuencia });
       setNombre("");
@@ -98,11 +111,9 @@ export default function Dashboard() {
     setMarkingId(habitId);
     try {
       await markHabitDone(habitId);
-      // Refrescar solo para actualizar racha y estado
       fetchHabits();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
-      // Si ya estaba marcado hoy, lo indicamos 
       if (errorMessage.includes("Ya marcado")) {
         alert("Este hábito ya lo completaste hoy 👍");
       } else {
@@ -113,10 +124,48 @@ export default function Dashboard() {
     }
   };
 
-  //Habitos pendientes hoy
-  const pendingHabits = habits.filter(
-    (h) => !completedToday.includes(h.id_habito)
-  );
+  // Activar edición inline precargando los datos actuales
+  const handleStartEdit = (habit: Habit) => {
+    setEditingId(habit.id_habito);
+    setEditForm({
+      nombre: habit.nombre,
+      descripcion: habit.descripcion,
+      frecuencia: habit.frecuencia,
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+  };
+
+  const handleSaveEdit = async (habitId: number) => {
+    setSaving(true);
+    try {
+      await updateHabit(habitId, editForm);
+      setEditingId(null);
+      fetchHabits();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      alert(`Error al actualizar: ${errorMessage}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (habitId: number, nombre: string) => {
+    const confirmed = window.confirm(`¿Eliminar el hábito "${nombre}"? Se borrará todo su progreso.`);
+    if (!confirmed) return;
+
+    try {
+      await deleteHabit(habitId);
+      fetchHabits();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      alert(`Error al eliminar: ${errorMessage}`);
+    }
+  };
+
+  const pendingHabits = habits.filter((h) => !completedToday.includes(h.id_habito));
 
   if (loading) return <p>Cargando hábitos...</p>;
   if (error) return <p>{error}</p>;
@@ -144,14 +193,13 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* TODOS COMPLETADOS */}
       {habits.length > 0 && pendingHabits.length === 0 && (
         <div style={{ backgroundColor: "#d4edda", border: "1px solid #28a745", padding: "12px", borderRadius: "6px", marginBottom: "16px" }}>
           <strong>✅ ¡Has completado todos tus hábitos de hoy!</strong>
         </div>
       )}
 
-      {/* FORMULARIO */}
+      {/* FORMULARIO CREAR */}
       <h2>Crear nuevo hábito</h2>
       <form onSubmit={handleCreateHabit}>
         <input
@@ -166,10 +214,7 @@ export default function Dashboard() {
           value={descripcion}
           onChange={(e) => setDescripcion(e.target.value)}
         />
-        <select
-          value={frecuencia}
-          onChange={(e) => setFrecuencia(e.target.value)}
-        >
+        <select value={frecuencia} onChange={(e) => setFrecuencia(e.target.value)}>
           <option value="diaria">Diaria</option>
           <option value="semanal">Semanal</option>
           <option value="mensual">Mensual</option>
@@ -187,18 +232,53 @@ export default function Dashboard() {
         <ul>
           {habits.map((habit) => {
             const done = completedToday.includes(habit.id_habito);
+            const isEditing = editingId === habit.id_habito;
+
             return (
               <li key={habit.id_habito}>
-                <h3>{habit.nombre} {done && "✅"}</h3>
-                <p>{habit.descripcion}</p>
-                <p>Frecuencia: {habit.frecuencia}</p>
-                <p>🔥 Racha: {habit.streak ?? 0} días</p>
-                <button
-                  onClick={() => handleMarkDone(habit.id_habito)}
-                  disabled={markingId === habit.id_habito || done}
-                >
-                  {done ? "Completado hoy" : markingId === habit.id_habito ? "Guardando..." : "✓ Completado hoy"}
-                </button>
+                {isEditing ? (
+                  // MODO EDICIÓN INLINE
+                  <div>
+                    <input
+                      type="text"
+                      value={editForm.nombre}
+                      onChange={(e) => setEditForm({ ...editForm, nombre: e.target.value })}
+                    />
+                    <input
+                      type="text"
+                      value={editForm.descripcion}
+                      onChange={(e) => setEditForm({ ...editForm, descripcion: e.target.value })}
+                    />
+                    <select
+                      value={editForm.frecuencia}
+                      onChange={(e) => setEditForm({ ...editForm, frecuencia: e.target.value })}
+                    >
+                      <option value="diaria">Diaria</option>
+                      <option value="semanal">Semanal</option>
+                      <option value="mensual">Mensual</option>
+                    </select>
+                    <button onClick={() => handleSaveEdit(habit.id_habito)} disabled={saving}>
+                      {saving ? "Guardando..." : "Guardar"}
+                    </button>
+                    <button onClick={handleCancelEdit}>Cancelar</button>
+                  </div>
+                ) : (
+                  // MODO VISUALIZACIÓN
+                  <div>
+                    <h3>{habit.nombre} {done && "✅"}</h3>
+                    <p>{habit.descripcion}</p>
+                    <p>Frecuencia: {habit.frecuencia}</p>
+                    <p>🔥 Racha: {habit.streak ?? 0} días</p>
+                    <button
+                      onClick={() => handleMarkDone(habit.id_habito)}
+                      disabled={markingId === habit.id_habito || done}
+                    >
+                      {done ? "Completado hoy" : markingId === habit.id_habito ? "Guardando..." : "✓ Completado hoy"}
+                    </button>
+                    <button onClick={() => handleStartEdit(habit)}>Editar</button>
+                    <button onClick={() => handleDelete(habit.id_habito, habit.nombre)}>Eliminar</button>
+                  </div>
+                )}
               </li>
             );
           })}
