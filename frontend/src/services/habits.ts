@@ -39,6 +39,41 @@ export const createHabit = async (habit: {
   return res.json();
 };
 
+export const updateHabit = async (
+  habitId: number,
+  data: { nombre?: string; descripcion?: string; frecuencia?: string }
+) => {
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(`${API_URL}/habits/${habitId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.mensaje || `[${res.status}] Error al actualizar hábito`);
+  return body;
+};
+
+ export const deleteHabit = async (habitId: number) => {
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(`${API_URL}/habits/${habitId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.mensaje || `[${res.status}] Error al eliminar hábito`);
+  return body;
+};
+
 export const markHabitDone = async (habitId: number) => {
   const token = localStorage.getItem("token");
 
