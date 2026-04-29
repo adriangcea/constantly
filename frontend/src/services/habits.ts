@@ -75,3 +75,27 @@ export const getStreak = async (habitId: number) => {
 
   return res.json(); // devuelve { streak: number }
 };
+
+export const getTodayProgress = async (): Promise<number[]> => {
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(`${API_URL}/progress`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error(`[${res.status}] Error al obtener progreso`);
+  }
+
+  const data = await res.json();
+
+  // Filtramos los completados hoy y devolvemos solo los ids
+  const today = new Date().toISOString().split("T")[0];
+  return data
+    .filter((r: { fecha: string; completado: boolean }) =>
+      r.completado && r.fecha === today
+    )
+    .map((r: { id_habito: number }) => r.id_habito);
+};
