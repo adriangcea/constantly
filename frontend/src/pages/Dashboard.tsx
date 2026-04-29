@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { getHabits, createHabit, markHabitDone, getStreak } from "../services/habits";
+import { 
+  getHabits, createHabit, markHabitDone, getStreak, getTodayProgress } from "../services/habits";
 
 interface Habit {
   id_habito: number;
@@ -17,6 +18,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   const [habits, setHabits] = useState<Habit[]>([]);
+  const [completedToday, setCompletedToday] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -35,7 +37,12 @@ export default function Dashboard() {
   const fetchHabits = async () => {
     try {
       setLoading(true);
-      const data = await getHabits();
+      
+      // Cargamos hábitos y progreso de hoy en paralelo
+      const [data, todayIds] = await Promise.all([
+        getHabits(),
+        getTodayProgress(),
+      ]);
 
       // Para cada hábito, obtener su racha
       const habitsWithStreak = await Promise.all(
@@ -50,6 +57,7 @@ export default function Dashboard() {
       );
 
       setHabits(habitsWithStreak);
+      setCompletedToday(todayIds);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       setError(`No se pudieron cargar los hábitos: ${errorMessage}`);
@@ -64,7 +72,6 @@ export default function Dashboard() {
 
   const handleCreateHabit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!nombre) {
       alert("El nombre es obligatorio");
       return;
@@ -95,7 +102,7 @@ export default function Dashboard() {
       fetchHabits();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
-      // Si ya estaba marcado hoy, lo indicamos sin alert agresivo
+      // Si ya estaba marcado hoy, lo indicamos 
       if (errorMessage.includes("Ya marcado")) {
         alert("Este hábito ya lo completaste hoy 👍");
       } else {
@@ -106,6 +113,11 @@ export default function Dashboard() {
     }
   };
 
+  //Habitos pendientes hoy
+  const pendingHabits = habits.filter(
+    (h) => !completedToday.includes(h.id_habito)
+  );
+
   if (loading) return <p>Cargando hábitos...</p>;
   if (error) return <p>{error}</p>;
 
@@ -114,9 +126,30 @@ export default function Dashboard() {
       {/* CABECERA */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h1>Dashboard</h1>
-        <button onClick={() => navigate("/profile")}>Mi perfil</button>
-        <button onClick={handleLogout}>Cerrar sesión</button>
+        <div>
+          <button onClick={() => navigate("/profile")}>Mi perfil</button>
+          <button onClick={handleLogout}>Cerrar sesión</button>
+        </div>
       </div>
+
+      {/* RECORDATORIO */}
+      {pendingHabits.length > 0 && (
+        <div style={{ backgroundColor: "#fff3cd", border: "1px solid #ffc107", padding: "12px", borderRadius: "6px", marginBottom: "16px" }}>
+          <strong>⏰ Tienes {pendingHabits.length} hábito{pendingHabits.length > 1 ? "s" : ""} pendiente{pendingHabits.length > 1 ? "s" : ""} hoy:</strong>
+          <ul style={{ margin: "8px 0 0 0" }}>
+            {pendingHabits.map((h) => (
+              <li key={h.id_habito}>{h.nombre}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* TODOS COMPLETADOS */}
+      {habits.length > 0 && pendingHabits.length === 0 && (
+        <div style={{ backgroundColor: "#d4edda", border: "1px solid #28a745", padding: "12px", borderRadius: "6px", marginBottom: "16px" }}>
+          <strong>✅ ¡Has completado todos tus hábitos de hoy!</strong>
+        </div>
+      )}
 
       {/* FORMULARIO */}
       <h2>Crear nuevo hábito</h2>
@@ -152,20 +185,23 @@ export default function Dashboard() {
         <p>No tienes hábitos aún</p>
       ) : (
         <ul>
-          {habits.map((habit) => (
-            <li key={habit.id_habito}>
-              <h3>{habit.nombre}</h3>
-              <p>{habit.descripcion}</p>
-              <p>Frecuencia: {habit.frecuencia}</p>
-              <p>🔥 Racha: {habit.streak ?? 0} días</p>
-              <button
-                onClick={() => handleMarkDone(habit.id_habito)}
-                disabled={markingId === habit.id_habito}
-              >
-                {markingId === habit.id_habito ? "Guardando..." : "✓ Completado hoy"}
-              </button>
-            </li>
-          ))}
+          {habits.map((habit) => {
+            const done = completedToday.includes(habit.id_habito);
+            return (
+              <li key={habit.id_habito}>
+                <h3>{habit.nombre} {done && "✅"}</h3>
+                <p>{habit.descripcion}</p>
+                <p>Frecuencia: {habit.frecuencia}</p>
+                <p>🔥 Racha: {habit.streak ?? 0} días</p>
+                <button
+                  onClick={() => handleMarkDone(habit.id_habito)}
+                  disabled={markingId === habit.id_habito || done}
+                >
+                  {done ? "Completado hoy" : markingId === habit.id_habito ? "Guardando..." : "✓ Completado hoy"}
+                </button>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
