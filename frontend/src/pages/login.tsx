@@ -46,7 +46,7 @@ export default function Login() {
           <img
             src={logo}
             alt="Constantly logo"
-            className="w-26 h-26 rounded-2xl object-cover mb-4"
+            className="w-48 h-48 rounded-2xl object-cover mb-4"
           />
           <h1 className="text-3xl font-bold text-c-white tracking-tight">Constantly</h1>
           <p className="text-c-gray text-sm mt-1">Consigue tus objetivos</p>
