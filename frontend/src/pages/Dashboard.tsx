@@ -11,6 +11,8 @@ import {
   deleteHabit,
 } from "../services/habits";
 import logo from "../assets/logo.jpg";
+import HabitCalendar from "../components/HabitCalendar";
+
 
 interface Habit {
   id_habito: number;
@@ -36,6 +38,7 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [markingId, setMarkingId] = useState<number | null>(null);
+  const [calendarOpenId, setCalendarOpenId] = useState<number | null>(null);
 
   // Edición inline
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -374,6 +377,17 @@ export default function Dashboard() {
                         >
                           Eliminar
                         </button>
+                        <button
+                           onClick={() => setCalendarOpenId(calendarOpenId === habit.id_habito ? null : habit.id_habito)}
+                          className="w-full mt-2 text-xs text-c-gray hover:text-c-white transition text-center py-1"
+                          >
+                          {calendarOpenId === habit.id_habito ? "▲ Ocultar historial" : "▼ Ver historial"}
+                        </button>
+
+                        {calendarOpenId === habit.id_habito && (
+                          <HabitCalendar habitId={habit.id_habito} />
+                        )}
+                        
                       </div>
                     </div>
                   )}

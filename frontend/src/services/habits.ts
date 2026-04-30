@@ -136,3 +136,19 @@ export const getTodayProgress = async (): Promise<number[]> => {
     )
     .map((r: { id_habito: number }) => r.id_habito);
 };
+
+export const getHabitProgress = async (habitId: number) => {
+  const token = localStorage.getItem("token");
+
+  const res = await fetch(`${API_URL}/progress/${habitId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error(`[${res.status}] Error al obtener historial`);
+  }
+
+  return res.json(); // devuelve [{ fecha: "2026-04-28", completado: true }, ...]
+};
