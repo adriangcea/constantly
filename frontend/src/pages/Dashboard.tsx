@@ -196,79 +196,87 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-c-black text-c-white">
 
-      {/* NAVBAR */}
-      <nav className="bg-c-dark border-b border-c-light/10 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <img src={logo} alt="Constantly" className="w-8 h-8 rounded-lg object-cover" />
-          <h1 className="text-xl font-bold tracking-tight">Constantly</h1>
-        </div>
-
-        <div className="flex items-center gap-3">
-
-          {/* CAMPANA DE NOTIFICACIONES */}
-          <div className="relative" ref={notifRef}>
-            <button
-              onClick={handleToggleNotif}
-              className="relative text-sm text-c-gray hover:text-c-white transition px-3 py-1.5 rounded-lg hover:bg-c-light/10"
-            >
-              🔔
-              {/* BADGE */}
-              {badgeVisible && pendingHabits.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-c-white text-c-black text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                  {pendingHabits.length}
-                </span>
-              )}
-            </button>
-
-            {/* DROPDOWN */}
-            {notifOpen && (
-              <div className="absolute right-0 mt-2 w-72 bg-c-dark border border-c-light/10 rounded-xl shadow-xl z-50 overflow-hidden">
-                <div className="px-4 py-3 border-b border-c-light/10">
-                  <p className="text-sm font-semibold text-c-white">Pendientes hoy</p>
-                </div>
-
-                {pendingHabits.length === 0 ? (
-                  <div className="px-4 py-6 text-center">
-                    <p className="text-c-gray text-sm">✅ ¡Todo completado!</p>
-                    <p className="text-c-gray/50 text-xs mt-1">No tienes hábitos pendientes hoy</p>
-                  </div>
-                ) : (
-                  <ul className="divide-y divide-c-light/10 max-h-64 overflow-y-auto">
-                    {pendingHabits.map((h) => (
-                      <li key={h.id_habito} className="px-4 py-3 flex items-center justify-between gap-3">
-                        <span className="text-sm text-c-white truncate">{h.nombre}</span>
-                        <button
-                          onClick={async () => {
-                            await handleMarkDone(h.id_habito);
-                            if (pendingHabits.length === 1) setNotifOpen(false);
-                          }}
-                          className="text-xs bg-c-white hover:bg-c-light text-c-black font-medium rounded-lg px-2.5 py-1 transition shrink-0"
-                        >
-                          ✓ Marcar
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
+        {/* NAVBAR */}
+        <nav className="bg-c-dark border-b border-c-light/10 px-4 py-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <img src={logo} alt="Constantly" className="w-8 h-8 rounded-lg object-cover shrink-0" />
+            <h1 className="text-lg font-bold tracking-tight truncate">Constantly</h1>
           </div>
 
-          <button
-            onClick={() => navigate("/profile")}
-            className="text-sm text-c-gray hover:text-c-white transition px-3 py-1.5 rounded-lg hover:bg-c-light/10"
-          >
-            Mi perfil
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
 
-          <button
-            onClick={handleLogout}
-            className="text-sm bg-c-light/10 hover:bg-c-light/20 text-c-white px-3 py-1.5 rounded-lg transition"
-          >
-            Cerrar sesión
-          </button>
-        </div>
-      </nav>
+            {/* CAMPANA DE NOTIFICACIONES */}
+            <div className="relative" ref={notifRef}>
+              <button
+                onClick={handleToggleNotif}
+                className="relative text-sm text-c-gray hover:text-c-white transition p-2 rounded-lg hover:bg-c-light/10"
+              >
+                🔔
+                {badgeVisible && pendingHabits.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-c-white text-c-black text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                    {pendingHabits.length}
+                  </span>
+                )}
+              </button>
+
+              {/* DROPDOWN */}
+              {notifOpen && (
+                <div className="absolute right-0 mt-2 w-72 max-w-[calc(100vw-2rem)] bg-c-dark border border-c-light/10 rounded-xl shadow-xl z-50 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-c-light/10">
+                    <p className="text-sm font-semibold text-c-white">Pendientes hoy</p>
+                  </div>
+
+                  {pendingHabits.length === 0 ? (
+                    <div className="px-4 py-6 text-center">
+                      <p className="text-c-gray text-sm">✅ ¡Todo completado!</p>
+                      <p className="text-c-gray/50 text-xs mt-1">No tienes hábitos pendientes hoy</p>
+                    </div>
+                  ) : (
+                    <ul className="divide-y divide-c-light/10 max-h-64 overflow-y-auto">
+                      {pendingHabits.map((h) => (
+                        <li key={h.id_habito} className="px-4 py-3 flex items-center justify-between gap-3">
+                          <span className="text-sm text-c-white truncate">{h.nombre}</span>
+                          <button
+                            onClick={async () => {
+                              await handleMarkDone(h.id_habito);
+                              if (pendingHabits.length === 1) setNotifOpen(false);
+                            }}
+                            className="text-xs bg-c-white hover:bg-c-light text-c-black font-medium rounded-lg px-2.5 py-1 transition shrink-0"
+                          >
+                            ✓ Marcar
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={() => navigate("/profile")}
+              className="text-sm text-c-gray hover:text-c-white transition p-2 rounded-lg hover:bg-c-light/10 hidden sm:block"
+            >
+              Mi perfil
+            </button>
+
+            <button
+              onClick={() => navigate("/profile")}
+              className="text-sm text-c-gray hover:text-c-white transition p-2 rounded-lg hover:bg-c-light/10 sm:hidden"
+              title="Mi perfil"
+            >
+              👤
+            </button>
+
+            <button
+              onClick={handleLogout}
+              className="text-sm bg-c-light/10 hover:bg-c-light/20 text-c-white px-2 sm:px-3 py-1.5 rounded-lg transition"
+            >
+              <span className="hidden sm:inline">Cerrar sesión</span>
+              <span className="sm:hidden">↩</span>
+            </button>
+          </div>
+        </nav>
 
       <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
 
