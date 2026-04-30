@@ -180,7 +180,7 @@ export default function Dashboard() {
       {/* NAVBAR */}
       <nav className="bg-c-dark border-b border-c-light/10 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <img src={logo} alt="Constantly" className="w-9 h-9 rounded-lg object-cover" />
+          <img src={logo} alt="Constantly" className="w-8 h-8 rounded-lg object-cover" />
             <h1 className="text-xl font-bold tracking-tight">Constantly</h1>
         </div>
         <div className="flex items-center gap-3">
