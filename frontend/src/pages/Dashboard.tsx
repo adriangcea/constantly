@@ -10,6 +10,7 @@ import {
   updateHabit,
   deleteHabit,
 } from "../services/habits";
+import logo from "../assets/logo.jpg";
 
 interface Habit {
   id_habito: number;
@@ -46,6 +47,9 @@ export default function Dashboard() {
   const [descripcion, setDescripcion] = useState("");
   const [frecuencia, setFrecuencia] = useState("diaria");
 
+  // Formulario abierto/cerrado
+  const [formOpen, setFormOpen] = useState(false);
+
   const handleLogout = () => {
     logout();
     navigate("/login");
@@ -54,7 +58,6 @@ export default function Dashboard() {
   const fetchHabits = async () => {
     try {
       setLoading(true);
-
       const [data, todayIds] = await Promise.all([
         getHabits(),
         getTodayProgress(),
@@ -87,20 +90,17 @@ export default function Dashboard() {
 
   const handleCreateHabit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nombre) {
-      alert("El nombre es obligatorio");
-      return;
-    }
+    if (!nombre) return;
     setCreating(true);
     try {
       await createHabit({ nombre, descripcion, frecuencia });
       setNombre("");
       setDescripcion("");
       setFrecuencia("diaria");
+      setFormOpen(false);
       fetchHabits();
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "No se pudo determinar la causa del error.";
+      const errorMessage = err instanceof Error ? err.message : "Error desconocido";
       alert(`Error al crear hábito: ${errorMessage}`);
     } finally {
       setCreating(false);
@@ -124,19 +124,12 @@ export default function Dashboard() {
     }
   };
 
-  // Activar edición inline precargando los datos actuales
   const handleStartEdit = (habit: Habit) => {
     setEditingId(habit.id_habito);
-    setEditForm({
-      nombre: habit.nombre,
-      descripcion: habit.descripcion,
-      frecuencia: habit.frecuencia,
-    });
+    setEditForm({ nombre: habit.nombre, descripcion: habit.descripcion, frecuencia: habit.frecuencia });
   };
 
-  const handleCancelEdit = () => {
-    setEditingId(null);
-  };
+  const handleCancelEdit = () => setEditingId(null);
 
   const handleSaveEdit = async (habitId: number) => {
     setSaving(true);
@@ -155,7 +148,6 @@ export default function Dashboard() {
   const handleDelete = async (habitId: number, nombre: string) => {
     const confirmed = window.confirm(`¿Eliminar el hábito "${nombre}"? Se borrará todo su progreso.`);
     if (!confirmed) return;
-
     try {
       await deleteHabit(habitId);
       fetchHabits();
@@ -167,123 +159,230 @@ export default function Dashboard() {
 
   const pendingHabits = habits.filter((h) => !completedToday.includes(h.id_habito));
 
-  if (loading) return <p>Cargando hábitos...</p>;
-  if (error) return <p>{error}</p>;
+  if (loading) return (
+    <div className="min-h-screen bg-c-black flex items-center justify-center">
+      <p className="text-c-gray text-sm animate-pulse">Cargando hábitos...</p>
+    </div>
+  );
+
+  if (error) return (
+    <div className="min-h-screen bg-c-black flex items-center justify-center">
+      <p className="text-red-400 text-sm">{error}</p>
+    </div>
+  );
 
   return (
-    <div>
-      {/* CABECERA */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1>Dashboard</h1>
-        <div>
-          <button onClick={() => navigate("/profile")}>Mi perfil</button>
-          <button onClick={handleLogout}>Cerrar sesión</button>
+    <div className="min-h-screen bg-c-black text-c-white">
+
+      {/* NAVBAR */}
+      <nav className="bg-c-dark border-b border-c-light/10 px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <img src={logo} alt="Constantly" className="w-9 h-9 rounded-lg object-cover" />
+            <h1 className="text-xl font-bold tracking-tight">Constantly</h1>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate("/profile")}
+            className="text-sm text-c-gray hover:text-c-white transition px-3 py-1.5 rounded-lg hover:bg-c-light/10"
+          >
+            Mi perfil
+          </button>
+          <button
+            onClick={handleLogout}
+            className="text-sm bg-c-light/10 hover:bg-c-light/20 text-c-white px-3 py-1.5 rounded-lg transition"
+          >
+            Cerrar sesión
+          </button>
+        </div>
+      </nav>
+
+      <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
+
+        {/* BANNER PENDIENTES */}
+        {pendingHabits.length > 0 && (
+          <div className="bg-c-light/10 border border-c-light/20 rounded-xl px-5 py-4">
+            <p className="text-c-white font-semibold text-sm mb-2">
+            ⏰ Tienes {pendingHabits.length} hábito{pendingHabits.length > 1 ? "s" : ""} pendiente{pendingHabits.length > 1 ? "s" : ""} hoy
+           </p>
+            <ul className="space-y-1">
+            {pendingHabits.map((h) => (
+            <li key={h.id_habito} className="text-c-gray text-sm">• {h.nombre}</li>
+            ))}
+            </ul>
+          </div>
+        )}
+
+        {/* BANNER COMPLETADOS */}
+        {habits.length > 0 && pendingHabits.length === 0 && (
+          <div className="bg-green-500/10 border border-green-500/30 rounded-xl px-5 py-4">
+            <p className="text-green-400 font-semibold text-sm">✅ ¡Has completado todos tus hábitos de hoy!</p>
+          </div>
+        )}
+
+        {/* BOTÓN ABRIR FORMULARIO */}
+        <button
+          onClick={() => setFormOpen(!formOpen)}
+          className="w-full bg-c-white hover:bg-c-light text-c-black font-semibold rounded-xl py-2.5 text-sm transition"
+        >
+          {formOpen ? "Cancelar" : "+ Nuevo hábito"}
+        </button>
+
+        {/* FORMULARIO CREAR */}
+        {formOpen && (
+          <div className="bg-c-dark border border-c-light/10 rounded-xl p-5 space-y-4">
+            <h2 className="text-base font-semibold text-c-white">Nuevo hábito</h2>
+            <form onSubmit={handleCreateHabit} className="space-y-3">
+              <input
+                type="text"
+                placeholder="Nombre"
+                value={nombre}
+                onChange={(e) => setNombre(e.target.value)}
+                className="w-full bg-c-black border border-c-light/20 rounded-lg px-4 py-2.5 text-sm text-c-white placeholder-c-gray/50 focus:outline-none focus:ring-2 focus:ring-c-gray/40 transition"
+              />
+              <input
+                type="text"
+                placeholder="Descripción (opcional)"
+                value={descripcion}
+                onChange={(e) => setDescripcion(e.target.value)}
+                className="w-full bg-c-black border border-c-light/20 rounded-lg px-4 py-2.5 text-sm text-c-white placeholder-c-gray/50 focus:outline-none focus:ring-2 focus:ring-c-gray/40 transition"
+              />
+              <select
+                value={frecuencia}
+                onChange={(e) => setFrecuencia(e.target.value)}
+                className="w-full bg-c-black border border-c-light/20 rounded-lg px-4 py-2.5 text-sm text-c-white focus:outline-none focus:ring-2 focus:ring-c-gray/40 transition"
+              >
+                <option value="diaria">Diaria</option>
+                <option value="semanal">Semanal</option>
+                <option value="mensual">Mensual</option>
+              </select>
+              <button
+                type="submit"
+                disabled={creating || !nombre}
+                className="w-full bg-c-white hover:bg-c-light disabled:bg-c-gray text-c-black font-semibold rounded-lg py-2.5 text-sm transition"
+              >
+                {creating ? "Creando..." : "Crear hábito"}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* LISTA DE HÁBITOS */}
+        <div className="space-y-3">
+          <h2 className="text-base font-semibold text-c-gray uppercase tracking-wider text-xs">
+            Tus hábitos
+          </h2>
+
+          {habits.length === 0 ? (
+            <div className="bg-c-dark border border-c-light/10 rounded-xl px-5 py-8 text-center">
+              <p className="text-c-gray text-sm">No tienes hábitos aún</p>
+              <p className="text-c-gray/50 text-xs mt-1">Pulsa "+ Nuevo hábito" para empezar</p>
+            </div>
+          ) : (
+            habits.map((habit) => {
+              const done = completedToday.includes(habit.id_habito);
+              const isEditing = editingId === habit.id_habito;
+
+              return (
+                <div
+                  key={habit.id_habito}
+                  className={`bg-c-dark border rounded-xl p-5 transition ${
+                    done ? "border-green-500/30" : "border-c-light/10"
+                  }`}
+                >
+                  {isEditing ? (
+                    // MODO EDICIÓN INLINE
+                    <div className="space-y-3">
+                      <input
+                        type="text"
+                        value={editForm.nombre}
+                        onChange={(e) => setEditForm({ ...editForm, nombre: e.target.value })}
+                        className="w-full bg-c-black border border-c-light/20 rounded-lg px-4 py-2.5 text-sm text-c-white focus:outline-none focus:ring-2 focus:ring-c-gray/40 transition"
+                      />
+                      <input
+                        type="text"
+                        value={editForm.descripcion}
+                        onChange={(e) => setEditForm({ ...editForm, descripcion: e.target.value })}
+                        className="w-full bg-c-black border border-c-light/20 rounded-lg px-4 py-2.5 text-sm text-c-white focus:outline-none focus:ring-2 focus:ring-c-gray/40 transition"
+                      />
+                      <select
+                        value={editForm.frecuencia}
+                        onChange={(e) => setEditForm({ ...editForm, frecuencia: e.target.value })}
+                        className="w-full bg-c-dark border border-c-light/20 rounded-lg px-4 py-2.5 text-sm text-c-white focus:outline-none focus:ring-2 focus:ring-c-gray/40 transition"
+                      >
+                        <option value="diaria" className="bg-c-dark text-c-white">Diaria</option>
+                        <option value="semanal" className="bg-c-dark text-c-white">Semanal</option>
+                        <option value="mensual" className="bg-c-dark text-c-white">Mensual</option>
+                      </select>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleSaveEdit(habit.id_habito)}
+                          disabled={saving}
+                          className="flex-1 bg-c-white hover:bg-c-light disabled:bg-c-gray text-c-black font-semibold rounded-lg py-2 text-sm transition"
+                        >
+                          {saving ? "Guardando..." : "Guardar"}
+                        </button>
+                        <button
+                          onClick={handleCancelEdit}
+                          className="flex-1 bg-c-light/10 hover:bg-c-light/20 text-c-white rounded-lg py-2 text-sm transition"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    // MODO VISUALIZACIÓN
+                    <div>
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h3 className="font-semibold text-c-white">
+                            {habit.nombre} {done && "✅"}
+                          </h3>
+                          {habit.descripcion && (
+                            <p className="text-c-gray text-sm mt-0.5">{habit.descripcion}</p>
+                          )}
+                        </div>
+                        <span className="text-xs text-c-gray bg-c-light/10 px-2 py-1 rounded-full capitalize">
+                          {habit.frecuencia}
+                        </span>
+                      </div>
+
+                      <p className="text-sm text-c-gray mb-4">
+                        🔥 Racha: <span className="text-c-white font-medium">{habit.streak ?? 0} días</span>
+                      </p>
+
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleMarkDone(habit.id_habito)}
+                          disabled={markingId === habit.id_habito || done}
+                          className={`flex-1 text-sm font-medium rounded-lg py-2 transition ${
+                            done
+                              ? "bg-green-500/10 text-green-400 border border-green-500/30 cursor-default"
+                              : "bg-c-white hover:bg-c-light text-c-black"
+                          }`}
+                        >
+                          {done ? "Completado hoy" : markingId === habit.id_habito ? "Guardando..." : "✓ Completado hoy"}
+                        </button>
+                        <button
+                          onClick={() => handleStartEdit(habit)}
+                          className="px-3 py-2 text-sm text-c-gray hover:text-c-white bg-c-light/10 hover:bg-c-light/20 rounded-lg transition"
+                        >
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => handleDelete(habit.id_habito, habit.nombre)}
+                          className="px-3 py-2 text-sm text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 rounded-lg transition"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
-
-      {/* RECORDATORIO */}
-      {pendingHabits.length > 0 && (
-        <div style={{ backgroundColor: "#fff3cd", border: "1px solid #ffc107", padding: "12px", borderRadius: "6px", marginBottom: "16px" }}>
-          <strong>⏰ Tienes {pendingHabits.length} hábito{pendingHabits.length > 1 ? "s" : ""} pendiente{pendingHabits.length > 1 ? "s" : ""} hoy:</strong>
-          <ul style={{ margin: "8px 0 0 0" }}>
-            {pendingHabits.map((h) => (
-              <li key={h.id_habito}>{h.nombre}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {habits.length > 0 && pendingHabits.length === 0 && (
-        <div style={{ backgroundColor: "#d4edda", border: "1px solid #28a745", padding: "12px", borderRadius: "6px", marginBottom: "16px" }}>
-          <strong>✅ ¡Has completado todos tus hábitos de hoy!</strong>
-        </div>
-      )}
-
-      {/* FORMULARIO CREAR */}
-      <h2>Crear nuevo hábito</h2>
-      <form onSubmit={handleCreateHabit}>
-        <input
-          type="text"
-          placeholder="Nombre"
-          value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Descripción"
-          value={descripcion}
-          onChange={(e) => setDescripcion(e.target.value)}
-        />
-        <select value={frecuencia} onChange={(e) => setFrecuencia(e.target.value)}>
-          <option value="diaria">Diaria</option>
-          <option value="semanal">Semanal</option>
-          <option value="mensual">Mensual</option>
-        </select>
-        <button type="submit" disabled={creating}>
-          {creating ? "Creando..." : "Crear hábito"}
-        </button>
-      </form>
-
-      {/* LISTA */}
-      <h2>Tus hábitos</h2>
-      {habits.length === 0 ? (
-        <p>No tienes hábitos aún</p>
-      ) : (
-        <ul>
-          {habits.map((habit) => {
-            const done = completedToday.includes(habit.id_habito);
-            const isEditing = editingId === habit.id_habito;
-
-            return (
-              <li key={habit.id_habito}>
-                {isEditing ? (
-                  // MODO EDICIÓN INLINE
-                  <div>
-                    <input
-                      type="text"
-                      value={editForm.nombre}
-                      onChange={(e) => setEditForm({ ...editForm, nombre: e.target.value })}
-                    />
-                    <input
-                      type="text"
-                      value={editForm.descripcion}
-                      onChange={(e) => setEditForm({ ...editForm, descripcion: e.target.value })}
-                    />
-                    <select
-                      value={editForm.frecuencia}
-                      onChange={(e) => setEditForm({ ...editForm, frecuencia: e.target.value })}
-                    >
-                      <option value="diaria">Diaria</option>
-                      <option value="semanal">Semanal</option>
-                      <option value="mensual">Mensual</option>
-                    </select>
-                    <button onClick={() => handleSaveEdit(habit.id_habito)} disabled={saving}>
-                      {saving ? "Guardando..." : "Guardar"}
-                    </button>
-                    <button onClick={handleCancelEdit}>Cancelar</button>
-                  </div>
-                ) : (
-                  // MODO VISUALIZACIÓN
-                  <div>
-                    <h3>{habit.nombre} {done && "✅"}</h3>
-                    <p>{habit.descripcion}</p>
-                    <p>Frecuencia: {habit.frecuencia}</p>
-                    <p>🔥 Racha: {habit.streak ?? 0} días</p>
-                    <button
-                      onClick={() => handleMarkDone(habit.id_habito)}
-                      disabled={markingId === habit.id_habito || done}
-                    >
-                      {done ? "Completado hoy" : markingId === habit.id_habito ? "Guardando..." : "✓ Completado hoy"}
-                    </button>
-                    <button onClick={() => handleStartEdit(habit)}>Editar</button>
-                    <button onClick={() => handleDelete(habit.id_habito, habit.nombre)}>Eliminar</button>
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      )}
     </div>
   );
 }

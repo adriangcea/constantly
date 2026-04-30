@@ -1,22 +1,24 @@
 import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { login } from "../services/auth";
 import { useAuth } from "../context/AuthContext";
+import logo from "../assets/logo.jpg";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const { login: authLogin } = useAuth();
   const navigate = useNavigate();
 
   const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setError(null);
 
-    // Validación básica
     if (!email || !password) {
-      alert("Todos los campos son obligatorios");
+      setError("Todos los campos son obligatorios");
       return;
     }
 
@@ -24,50 +26,92 @@ export default function Login() {
 
     try {
       const data = await login(email, password);
-
       authLogin(data.access_token);
-
-      // Limpiar formulario
       setEmail("");
       setPassword("");
-
-      // Redirigir al dashboard
       navigate("/dashboard");
     } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "Verifica tus credenciales o intenta nuevamente más tarde";
-
-      alert(`Error al hacer login: ${message}`);
+      setError("Credenciales incorrectas. Verifica tu email y contraseña.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleLogin}>
-      <label htmlFor="email">Email</label>
-      <input
-        id="email"
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
+    <div className="min-h-screen bg-c-black flex items-center justify-center px-4">
+      <div className="w-full max-w-md">
 
-      <label htmlFor="password">Password</label>
-      <input
-        id="password"
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
+        {/* LOGO Y TÍTULO */}
+        <div className="flex flex-col items-center mb-8">
+          <img
+            src={logo}
+            alt="Constantly logo"
+            className="w-26 h-26 rounded-2xl object-cover mb-4"
+          />
+          <h1 className="text-3xl font-bold text-c-white tracking-tight">Constantly</h1>
+          <p className="text-c-gray text-sm mt-1">Consigue tus objetivos</p>
+        </div>
 
-      <button type="submit" disabled={loading}>
-        {loading ? "Entrando..." : "Entrar"}
-      </button>
-    </form>
+        {/* TARJETA */}
+        <div className="bg-c-dark rounded-2xl p-8 shadow-xl border border-c-light/10">
+
+          <h2 className="text-lg font-semibold text-c-white mb-6">Iniciar sesión</h2>
+
+          {/* ERROR */}
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-lg px-4 py-3 mb-5 text-sm">
+              {error}
+            </div>
+          )}
+
+          {/* FORMULARIO */}
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-c-gray mb-1.5">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                placeholder="tu@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full bg-c-black border border-c-light/20 rounded-lg px-4 py-2.5 text-sm text-c-white placeholder-c-gray/50 focus:outline-none focus:ring-2 focus:ring-c-gray/40 focus:border-transparent transition"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-c-gray mb-1.5">
+                Contraseña
+              </label>
+              <input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full bg-c-black border border-c-light/20 rounded-lg px-4 py-2.5 text-sm text-c-white placeholder-c-gray/50 focus:outline-none focus:ring-2 focus:ring-c-gray/40 focus:border-transparent transition"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-c-white hover:bg-c-light disabled:bg-c-gray text-c-black font-semibold rounded-lg py-2.5 text-sm transition mt-2"
+            >
+              {loading ? "Entrando..." : "Iniciar sesión"}
+            </button>
+          </form>
+
+          {/* ENLACE REGISTRO */}
+          <p className="text-center text-sm text-c-gray mt-6">
+            ¿No tienes cuenta?{" "}
+            <Link to="/register" className="text-c-white hover:text-c-light font-medium underline underline-offset-2 transition">
+              Regístrate
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }
