@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import logo from "../assets/logo.jpg";
+import HabitCalendar from "../components/HabitCalendar";
 import {
   getHabits,
   createHabit,
@@ -10,9 +12,6 @@ import {
   updateHabit,
   deleteHabit,
 } from "../services/habits";
-import logo from "../assets/logo.jpg";
-import HabitCalendar from "../components/HabitCalendar";
-
 
 interface Habit {
   id_habito: number;
@@ -38,7 +37,13 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [markingId, setMarkingId] = useState<number | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
   const [calendarOpenId, setCalendarOpenId] = useState<number | null>(null);
+
+  // Notificaciones
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [badgeVisible, setBadgeVisible] = useState(true);
+  const notifRef = useRef<HTMLDivElement>(null);
 
   // Edición inline
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -49,9 +54,6 @@ export default function Dashboard() {
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [frecuencia, setFrecuencia] = useState("diaria");
-
-  // Formulario abierto/cerrado
-  const [formOpen, setFormOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -79,6 +81,7 @@ export default function Dashboard() {
 
       setHabits(habitsWithStreak);
       setCompletedToday(todayIds);
+      setBadgeVisible(true);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       setError(`No se pudieron cargar los hábitos: ${errorMessage}`);
@@ -90,6 +93,22 @@ export default function Dashboard() {
   useEffect(() => {
     fetchHabits();
   }, []);
+
+  // Cerrar dropdown al hacer click fuera
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setNotifOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleToggleNotif = () => {
+    setNotifOpen(!notifOpen);
+    if (!notifOpen) setBadgeVisible(false);
+  };
 
   const handleCreateHabit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -181,15 +200,67 @@ export default function Dashboard() {
       <nav className="bg-c-dark border-b border-c-light/10 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <img src={logo} alt="Constantly" className="w-8 h-8 rounded-lg object-cover" />
-            <h1 className="text-xl font-bold tracking-tight">Constantly</h1>
+          <h1 className="text-xl font-bold tracking-tight">Constantly</h1>
         </div>
+
         <div className="flex items-center gap-3">
+
+          {/* CAMPANA DE NOTIFICACIONES */}
+          <div className="relative" ref={notifRef}>
+            <button
+              onClick={handleToggleNotif}
+              className="relative text-sm text-c-gray hover:text-c-white transition px-3 py-1.5 rounded-lg hover:bg-c-light/10"
+            >
+              🔔
+              {/* BADGE */}
+              {badgeVisible && pendingHabits.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-c-white text-c-black text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                  {pendingHabits.length}
+                </span>
+              )}
+            </button>
+
+            {/* DROPDOWN */}
+            {notifOpen && (
+              <div className="absolute right-0 mt-2 w-72 bg-c-dark border border-c-light/10 rounded-xl shadow-xl z-50 overflow-hidden">
+                <div className="px-4 py-3 border-b border-c-light/10">
+                  <p className="text-sm font-semibold text-c-white">Pendientes hoy</p>
+                </div>
+
+                {pendingHabits.length === 0 ? (
+                  <div className="px-4 py-6 text-center">
+                    <p className="text-c-gray text-sm">✅ ¡Todo completado!</p>
+                    <p className="text-c-gray/50 text-xs mt-1">No tienes hábitos pendientes hoy</p>
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-c-light/10 max-h-64 overflow-y-auto">
+                    {pendingHabits.map((h) => (
+                      <li key={h.id_habito} className="px-4 py-3 flex items-center justify-between gap-3">
+                        <span className="text-sm text-c-white truncate">{h.nombre}</span>
+                        <button
+                          onClick={async () => {
+                            await handleMarkDone(h.id_habito);
+                            if (pendingHabits.length === 1) setNotifOpen(false);
+                          }}
+                          className="text-xs bg-c-white hover:bg-c-light text-c-black font-medium rounded-lg px-2.5 py-1 transition shrink-0"
+                        >
+                          ✓ Marcar
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+          </div>
+
           <button
             onClick={() => navigate("/profile")}
             className="text-sm text-c-gray hover:text-c-white transition px-3 py-1.5 rounded-lg hover:bg-c-light/10"
           >
             Mi perfil
           </button>
+
           <button
             onClick={handleLogout}
             className="text-sm bg-c-light/10 hover:bg-c-light/20 text-c-white px-3 py-1.5 rounded-lg transition"
@@ -201,21 +272,7 @@ export default function Dashboard() {
 
       <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
 
-        {/* BANNER PENDIENTES */}
-        {pendingHabits.length > 0 && (
-          <div className="bg-c-light/10 border border-c-light/20 rounded-xl px-5 py-4">
-            <p className="text-c-white font-semibold text-sm mb-2">
-            ⏰ Tienes {pendingHabits.length} hábito{pendingHabits.length > 1 ? "s" : ""} pendiente{pendingHabits.length > 1 ? "s" : ""} hoy
-           </p>
-            <ul className="space-y-1">
-            {pendingHabits.map((h) => (
-            <li key={h.id_habito} className="text-c-gray text-sm">• {h.nombre}</li>
-            ))}
-            </ul>
-          </div>
-        )}
-
-        {/* BANNER COMPLETADOS */}
+        {/* TODOS COMPLETADOS */}
         {habits.length > 0 && pendingHabits.length === 0 && (
           <div className="bg-green-500/10 border border-green-500/30 rounded-xl px-5 py-4">
             <p className="text-green-400 font-semibold text-sm">✅ ¡Has completado todos tus hábitos de hoy!</p>
@@ -254,9 +311,9 @@ export default function Dashboard() {
                 onChange={(e) => setFrecuencia(e.target.value)}
                 className="w-full bg-c-black border border-c-light/20 rounded-lg px-4 py-2.5 text-sm text-c-white focus:outline-none focus:ring-2 focus:ring-c-gray/40 transition"
               >
-                <option value="diaria">Diaria</option>
-                <option value="semanal">Semanal</option>
-                <option value="mensual">Mensual</option>
+                <option value="diaria" className="bg-c-dark text-c-white">Diaria</option>
+                <option value="semanal" className="bg-c-dark text-c-white">Semanal</option>
+                <option value="mensual" className="bg-c-dark text-c-white">Mensual</option>
               </select>
               <button
                 type="submit"
@@ -271,7 +328,7 @@ export default function Dashboard() {
 
         {/* LISTA DE HÁBITOS */}
         <div className="space-y-3">
-          <h2 className="text-base font-semibold text-c-gray uppercase tracking-wider text-xs">
+          <h2 className="text-xs font-semibold text-c-gray uppercase tracking-wider">
             Tus hábitos
           </h2>
 
@@ -293,7 +350,6 @@ export default function Dashboard() {
                   }`}
                 >
                   {isEditing ? (
-                    // MODO EDICIÓN INLINE
                     <div className="space-y-3">
                       <input
                         type="text"
@@ -333,7 +389,6 @@ export default function Dashboard() {
                       </div>
                     </div>
                   ) : (
-                    // MODO VISUALIZACIÓN
                     <div>
                       <div className="flex items-start justify-between mb-3">
                         <div>
@@ -377,18 +432,18 @@ export default function Dashboard() {
                         >
                           Eliminar
                         </button>
-                        <button
-                           onClick={() => setCalendarOpenId(calendarOpenId === habit.id_habito ? null : habit.id_habito)}
-                          className="w-full mt-2 text-xs text-c-gray hover:text-c-white transition text-center py-1"
-                          >
-                          {calendarOpenId === habit.id_habito ? "▲ Ocultar historial" : "▼ Ver historial"}
-                        </button>
-
-                        {calendarOpenId === habit.id_habito && (
-                          <HabitCalendar habitId={habit.id_habito} />
-                        )}
-                        
                       </div>
+
+                      <button
+                        onClick={() => setCalendarOpenId(calendarOpenId === habit.id_habito ? null : habit.id_habito)}
+                        className="w-full mt-2 text-xs text-c-gray hover:text-c-white transition text-center py-1"
+                      >
+                        {calendarOpenId === habit.id_habito ? "▲ Ocultar historial" : "▼ Ver historial"}
+                      </button>
+
+                      {calendarOpenId === habit.id_habito && (
+                        <HabitCalendar habitId={habit.id_habito} />
+                      )}
                     </div>
                   )}
                 </div>
