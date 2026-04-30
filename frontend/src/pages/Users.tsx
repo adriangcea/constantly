@@ -257,7 +257,7 @@ export default function Users() {
 
         {/* ZONA DE PELIGRO */}
         <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-6">
-          <h3 className="text-base font-semibold text-red-400 mb-2">Zona de peligro</h3>
+          <h3 className="text-base font-semibold text-red-400 mb-2">Opciones de cuenta</h3>
           <p className="text-c-gray text-sm mb-4">
             Eliminar tu cuenta borrará todos tus hábitos y progreso de forma permanente.
           </p>
