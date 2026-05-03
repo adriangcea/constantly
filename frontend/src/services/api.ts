@@ -1,4 +1,4 @@
-const API_URL = "http://16.171.174.225";
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 const getToken = () => localStorage.getItem("token");
 
